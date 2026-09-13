@@ -1,0 +1,22 @@
+{
+  "name": "hustle-boyz-stripe",
+  "version": "1.0.0",
+  "description": "Drop-in Stripe integration for Hustle Boyz (Payments, Billing, Connect, Invoicing, Tax)",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "setup:catalog": "node scripts/setup-catalog.js",
+    "setup:tax": "node scripts/setup-tax.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "stripe": "^17.4.0"
+  }
+}
