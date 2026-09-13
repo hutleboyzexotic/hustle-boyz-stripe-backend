@@ -1,14 +1,36 @@
+
+Claude Desktop (Windows), Connected
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Package · JSON
 {
   "name": "hustle-boyz-stripe",
   "version": "1.0.0",
   "description": "Drop-in Stripe integration for Hustle Boyz (Payments, Billing, Connect, Invoicing, Tax)",
   "type": "module",
-  "main": "src/server.js",
+  "main": "server.js",
   "scripts": {
-    "start": "node src/server.js",
-    "dev": "node --watch src/server.js",
-    "setup:catalog": "node scripts/setup-catalog.js",
-    "setup:tax": "node scripts/setup-tax.js"
+    "start": "node server.js",
+    "dev": "node --watch server.js"
   },
   "engines": {
     "node": ">=18"
