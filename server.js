@@ -127,8 +127,8 @@ app.post('/api/checkout/session', async (req, res) => {
       // Stripe Tax needs a customer address to calculate tax correctly.
       billing_address_collection: 'required',
       allow_promotion_codes: true,
-      success_url: `${process.env.CLIENT_URL}/subscribe/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.CLIENT_URL}/subscribe/cancelled`,
+      success_url: `${process.env.CLIENT_URL}/premium?success=1`,
+      cancel_url: `${process.env.CLIENT_URL}/premium?canceled=1`,
     }, {
       // Idempotency: prevent duplicate sessions if the client double-submits.
       idempotencyKey: req.headers['idempotency-key'] || undefined,
