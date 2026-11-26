@@ -1,4 +1,4 @@
-# Hustle Boyz — Stripe Integration
+﻿# Hustle Boyz — Stripe Integration
 
 A standalone, drop-in backend covering the five Stripe products you asked for: **Payments, Billing, Connect, Invoicing, Tax**. It's a small Express service you can run next to your existing site, or fold directly into it — each piece is one file in `src/routes/`.
 
@@ -75,6 +75,15 @@ window.location.href = url;      // redirect to Stripe Checkout
 ```
 
 After payment, Stripe redirects back to `CLIENT_URL/subscribe/success`, but the **source of truth is the webhook** (`checkout.session.completed`) — that's where you should actually flip the user to "premium" in your database, since a closed tab means the redirect never fires but the webhook always will.
+
+
+## Checkout blocker note (Tax)
+
+utomatic_tax is **off by default**. Turn it on only after you set a head-office address under Stripe Dashboard → Settings → Tax and set `STRIPE_AUTOMATIC_TAX=true` on the Render service. Until then, checkout sessions fail with a Tax configuration error.
+
+Member entitlements are synced by the **website** webhook at `POST /stripe/webhook` (not this service's log-only `/api/webhook`). Point Stripe Dashboard webhooks at the website URL for `checkout.session.completed` and `customer.subscription.*`.
+
+Payouts: this stack collects via Stripe Checkout. Funds settle to the payout destination configured in Stripe Dashboard → Settings → Payouts (bank account or eligible debit card). There is **no PayPal API** in this codebase.
 
 ## Testing without real money
 

@@ -113,23 +113,56 @@ app.get('/health', (req, res) => res.json({ ok: true }));
    ============================================================ */
 app.post('/api/checkout/session', async (req, res) => {
   try {
-    const { priceId, mode = 'subscription', customerEmail } = req.body;
+    const {
+      priceId,
+      mode = 'subscription',
+      customerEmail,
+      planKey,
+      successUrl,
+      cancelUrl,
+    } = req.body;
 
     if (!priceId) {
       return res.status(400).json({ error: 'priceId is required' });
     }
 
-    const session = await stripe.checkout.sessions.create({
+    const clientUrl = (process.env.CLIENT_URL || '').replace(/\/$/, '');
+    if (!clientUrl && (!successUrl || !cancelUrl)) {
+      return res.status(500).json({
+        error: 'CLIENT_URL is not set (and successUrl/cancelUrl were not provided)',
+      });
+    }
+
+    // Stripe Tax requires a configured head-office address in the Stripe
+    // Dashboard. Leave STRIPE_AUTOMATIC_TAX unset/false until that is done —
+    // otherwise every checkout.session.create fails and subscribers can't pay.
+    const automaticTax =
+      String(process.env.STRIPE_AUTOMATIC_TAX || '').toLowerCase() === 'true';
+
+    const metadata = {};
+    if (planKey) metadata.planKey = String(planKey);
+
+    const sessionParams = {
       mode, // 'subscription' for recurring plans, 'payment' for one-time
       line_items: [{ price: priceId, quantity: 1 }],
       customer_email: customerEmail || undefined,
-      automatic_tax: { enabled: true },
-      // Stripe Tax needs a customer address to calculate tax correctly.
-      billing_address_collection: 'required',
+      client_reference_id: customerEmail || undefined,
+      metadata,
+      automatic_tax: { enabled: automaticTax },
+      // Address is only required when Tax is on; still useful for receipts.
+      billing_address_collection: automaticTax ? 'required' : 'auto',
       allow_promotion_codes: true,
-      success_url: `${process.env.CLIENT_URL}/subscribe/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.CLIENT_URL}/subscribe/cancelled`,
-    }, {
+      success_url: successUrl || `${clientUrl}/premium?success=1`,
+      cancel_url: cancelUrl || `${clientUrl}/premium?canceled=1`,
+    };
+    // Copy planKey onto the Subscription so customer.subscription.*
+    // webhooks (handled by the website) can resolve the plan without
+    // relying only on price-id matching.
+    if (mode === 'subscription' && Object.keys(metadata).length) {
+      sessionParams.subscription_data = { metadata };
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionParams, {
       // Idempotency: prevent duplicate sessions if the client double-submits.
       idempotencyKey: req.headers['idempotency-key'] || undefined,
     });
@@ -314,11 +347,14 @@ app.post('/api/invoices', async (req, res) => {
       });
     }
 
+    const automaticTax =
+      String(process.env.STRIPE_AUTOMATIC_TAX || '').toLowerCase() === 'true';
+
     const invoice = await stripe.invoices.create({
       customer: customerId,
       collection_method: 'send_invoice',
       days_until_due: daysUntilDue,
-      automatic_tax: { enabled: true },
+      automatic_tax: { enabled: automaticTax },
       auto_advance: autoAdvance,
     });
 
